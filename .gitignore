@@ -24,6 +24,6 @@ Thumbs.db
 *.swo
 *~
 
-# RTSP Server
-mediamtx/
-media/
+# # RTSP Server
+# mediamtx/
+# media/

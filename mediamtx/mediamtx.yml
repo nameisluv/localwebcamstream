@@ -1,0 +1,37 @@
+
+###############################################
+# General
+###############################################
+
+# RTSP Server Port
+rtspAddress: :89
+rtpAddress: :8002
+rtcpAddress: :8003
+
+# Authentication Method
+authMethod: internal
+
+# Log Level
+logLevel: info
+
+# Disable other protocols to avoid port conflicts
+rtmp: no
+hls: no
+srt: no
+api: no
+
+# Enable WebRTC on a non-conflicting port
+webrtc: yes
+webrtcAddress: :8889
+
+###############################################
+# Paths
+###############################################
+
+paths:
+  "rtsp/streaming":
+    # Authentication
+    publishUser: user1
+    publishPass: BBE500bbe
+    readUser: user1
+    readPass: BBE500bbe
