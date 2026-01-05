@@ -1,0 +1,28 @@
+{
+  "name": "usb-camera-rtsp-streamer",
+  "version": "1.0.0",
+  "description": "USB Camera RTSP Streaming System - Select a USB camera and stream it via RTSP",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js",
+    "check-network": "node network-checker.js",
+    "add-firewall-rule": "node network-checker.js --add-firewall-rule"
+  },
+  "keywords": [
+    "rtsp",
+    "camera",
+    "streaming",
+    "usb",
+    "webcam"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "node-media-server": "^2.6.4",
+    "fluent-ffmpeg": "^2.1.3",
+    "inquirer": "^8.2.6",
+    "chalk": "^4.1.2",
+    "dotenv": "^16.4.5"
+  }
+}
