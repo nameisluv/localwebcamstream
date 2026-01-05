@@ -22,23 +22,33 @@ class StreamManager {
      */
     startStreaming(camera, rtspUrl, options = {}) {
         return new Promise((resolve, reject) => {
-            const width = options.width || 1280;
-            const height = options.height || 720;
-            const fps = options.fps || 30;
+            const preferWidth = options.width || 1280;
+            const preferHeight = options.height || 720;
+            const preferFps = options.fps || 60;
+            const attempts = [
+                { width: preferWidth, height: preferHeight, fps: preferFps },
+                { width: 1920, height: 1080, fps: 30 },
+                { width: 640, height: 480, fps: 30 }
+            ];
+            let attemptIndex = 0;
 
-            console.log(chalk.cyan('\n📹 Starting low-latency camera stream...'));
-            console.log(chalk.gray(`   Camera: ${camera.name}`));
-            console.log(chalk.gray(`   Resolution: ${width}x${height}`));
-            console.log(chalk.gray(`   FPS: ${fps}`));
-            console.log(chalk.gray(`   Publishing to: ${rtspUrl}\n`));
+            const tryStart = () => {
+                const width = attempts[attemptIndex].width;
+                const height = attempts[attemptIndex].height;
+                const fps = attempts[attemptIndex].fps;
+
+                console.log(chalk.cyan('\n📹 Starting low-latency camera stream...'));
+                console.log(chalk.gray(`   Camera: ${camera.name}`));
+                console.log(chalk.gray(`   Resolution: ${width}x${height}`));
+                console.log(chalk.gray(`   FPS: ${fps}`));
+                console.log(chalk.gray(`   Publishing to: ${rtspUrl}\n`));
 
             try {
                 // Build FFmpeg command with low-latency optimizations
                 const ffmpegArgs = [
                     // Input settings
                     '-f', 'dshow',
-                    '-rtbufsize', '10M',  // Reduced buffer for lower latency
-                    '-vcodec', 'mjpeg',
+                    '-rtbufsize', '200M',
                     '-framerate', fps.toString(),
                     '-video_size', `${width}x${height}`,
                     '-i', `video=${camera.deviceName}`,
@@ -70,6 +80,7 @@ class StreamManager {
                 this.ffmpegProcess = spawn(ffmpegCmd, ffmpegArgs);
 
                 let started = false;
+                let attemptTimedOut = false;
 
                 this.ffmpegProcess.stderr.on('data', (data) => {
                     const output = data.toString();
@@ -96,7 +107,13 @@ class StreamManager {
                     console.error(chalk.red('✗ Failed to start FFmpeg:'), error.message);
                     this.isStreaming = false;
                     if (!started) {
-                        reject(error);
+                        if (attemptIndex < attempts.length - 1) {
+                            console.log(chalk.yellow('Retrying with a different resolution/FPS...'));
+                            attemptIndex += 1;
+                            tryStart();
+                        } else {
+                            reject(error);
+                        }
                     }
                 });
 
@@ -114,7 +131,17 @@ class StreamManager {
                 // Timeout to reject if stream doesn't start within 10 seconds
                 setTimeout(() => {
                     if (!started) {
-                        reject(new Error('Stream failed to start within 10 seconds'));
+                        attemptTimedOut = true;
+                        if (this.ffmpegProcess) {
+                            this.ffmpegProcess.kill('SIGINT');
+                        }
+                        if (attemptIndex < attempts.length - 1) {
+                            console.log(chalk.yellow('Stream did not start, trying fallback settings...'));
+                            attemptIndex += 1;
+                            tryStart();
+                        } else {
+                            reject(new Error('Stream failed to start within 10 seconds'));
+                        }
                     }
                 }, 10000);
 
@@ -122,6 +149,9 @@ class StreamManager {
                 console.error(chalk.red('✗ Failed to start streaming:'), error.message);
                 reject(error);
             }
+            };
+
+            tryStart();
         });
     }
 
