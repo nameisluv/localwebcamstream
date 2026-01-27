@@ -3,8 +3,7 @@ const chalk = require('chalk');
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
-
-try { require('dotenv').config(); } catch (_) {}
+const config = require('./config');
 
 /**
  * RTSP Server Module using MediaMTX
@@ -13,13 +12,14 @@ try { require('dotenv').config(); } catch (_) {}
 
 class RTSPServer {
     constructor(opts = {}) {
-        this.port = Number(opts.port || process.env.RTSP_PORT || 89);
-        this.username = opts.username || process.env.RTSP_USERNAME || 'user1';
-        this.password = opts.password || process.env.RTSP_PASSWORD || 'BBE500bbe';
-        this.webrtcPort = Number(opts.webrtcPort || process.env.WEBRTC_PORT || 8889);
-        this.rtpPort = Number(opts.rtpPort || process.env.RTP_PORT || 8002);
-        this.rtcpPort = Number(opts.rtcpPort || process.env.RTCP_PORT || 8003);
-        this.publicIp = opts.publicIp || process.env.PUBLIC_IP || null;
+        this.pathName = 'rtsp/streaming';
+        this.port = Number(opts.port || config.RTSP_PORT);
+        this.username = opts.username || config.RTSP_USERNAME;
+        this.password = opts.password || config.RTSP_PASSWORD;
+        this.webrtcPort = Number(opts.webrtcPort || config.WEBRTC_PORT);
+        this.rtpPort = Number(opts.rtpPort || config.RTP_PORT);
+        this.rtcpPort = Number(opts.rtcpPort || config.RTCP_PORT);
+        this.publicIp = opts.publicIp || config.PUBLIC_IP || null;
         this.serverProcess = null;
         this.mediamtxPath = null;
     }
@@ -114,7 +114,7 @@ webrtcAddress: :${this.webrtcPort}
 ###############################################
 
 paths:
-  "rtsp/streaming":
+  "${this.pathName}":
     # Authentication
     publishUser: ${this.username}
     publishPass: ${this.password}
@@ -138,7 +138,7 @@ paths:
             this.generateConfig(); // Generate config before starting
 
             return new Promise((resolve, reject) => {
-                console.log(chalk.cyan('Starting RTSP server...'));
+                console.log(chalk.cyan('Starting RTSP server'));
 
                 // Start MediaMTX
                 this.serverProcess = spawn(this.mediamtxPath, [], {
@@ -153,7 +153,7 @@ paths:
 
                     if (!started && output.includes('listener opened')) {
                         started = true;
-                        console.log(chalk.green(`✓ RTSP server started on port ${this.port}`));
+                        console.log(chalk.green(`RTSP server started on port ${this.port}`));
                         resolve();
                     }
                 });
@@ -166,7 +166,7 @@ paths:
                 });
 
                 this.serverProcess.on('error', (error) => {
-                    console.error(chalk.red('✗ Failed to start RTSP server:'), error.message);
+                    console.error(chalk.red('Failed to start RTSP server:'), error.message);
                     reject(error);
                 });
 
@@ -179,13 +179,13 @@ paths:
                 // Timeout fallback
                 setTimeout(() => {
                     if (!started) {
-                        console.log(chalk.green('✓ RTSP server started (timeout fallback)'));
+                        console.log(chalk.green('RTSP server started (timeout fallback)'));
                         resolve();
                     }
                 }, 5000); // Increased to 5 seconds
             });
         } catch (error) {
-            console.error(chalk.red('✗ Failed to start RTSP server:'), error.message);
+            console.error(chalk.red('Failed to start RTSP server:'), error.message);
             throw error;
         }
     }
@@ -196,7 +196,7 @@ paths:
     stop() {
         if (this.serverProcess) {
             this.serverProcess.kill();
-            console.log(chalk.yellow('\n✓ RTSP server stopped'));
+            console.log(chalk.yellow('\nRTSP server stopped'));
         }
     }
 
@@ -205,14 +205,14 @@ paths:
      */
     getPublishUrl() {
         // Include credentials for publishing
-        return `rtsp://${this.username}:${this.password}@127.0.0.1:${this.port}/rtsp/streaming`;
+        return `rtsp://${this.username}:${this.password}@127.0.0.1:${this.port}/${this.pathName}`;
     }
 
     /**
      * Get the RTSP URL for viewing (local)
      */
     getViewUrl() {
-        return `rtsp://${this.username}:${this.password}@127.0.0.1:${this.port}/rtsp/streaming`;
+        return `rtsp://${this.username}:${this.password}@127.0.0.1:${this.port}/${this.pathName}`;
     }
 
     /**
@@ -220,8 +220,8 @@ paths:
      * @param {string} publicIp - Your public IP address or domain
      */
     getPublicUrl(publicIp) {
-        const ip = publicIp || this.publicIp || process.env.PUBLIC_IP || 'your_public_ip';
-        return `rtsp://${this.username}:${this.password}@${ip}:${this.port}/rtsp/streaming?channel=03&subtype=1`;
+        const ip = publicIp || this.publicIp || config.PUBLIC_IP || 'your_public_ip';
+        return `rtsp://${this.username}:${this.password}@${ip}:${this.port}/${this.pathName}?channel=03&subtype=1`;
     }
 }
 

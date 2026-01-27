@@ -1,8 +1,7 @@
 const chalk = require('chalk');
 const { execSync } = require('child_process');
 const https = require('https');
-
-try { require('dotenv').config(); } catch (_) {}
+const config = require('./config');
 
 /**
  * Network Configuration Checker
@@ -13,9 +12,9 @@ class NetworkChecker {
     constructor() {
         this.publicIp = null;
         this.localIp = null;
-        this.port = Number(process.env.RTSP_PORT || 89);
-        this.username = process.env.RTSP_USERNAME || 'user1';
-        this.password = process.env.RTSP_PASSWORD || 'BBE500bbe';
+        this.port = Number(config.RTSP_PORT);
+        this.username = config.RTSP_USERNAME;
+        this.password = config.RTSP_PASSWORD;
     }
 
     /**
@@ -92,17 +91,12 @@ class NetworkChecker {
      * Display comprehensive network diagnostic
      */
     async runDiagnostics() {
-        console.log(chalk.cyan('\n╔════════════════════════════════════════════════════════════════════╗'));
-        console.log(chalk.cyan('║         Network Configuration Checker for RTSP Streaming          ║'));
-        console.log(chalk.cyan('╚════════════════════════════════════════════════════════════════════╝\n'));
-
-        // Get IPs
-        console.log(chalk.cyan('📍 Network Information:\n'));
+        console.log(chalk.cyan('\nNetwork configuration checker\n'));
         this.localIp = this.getLocalIP();
         this.publicIp = await this.getPublicIP();
 
-        console.log(chalk.white('  Local IP Address:  ') + chalk.yellow(this.localIp));
-        console.log(chalk.white('  Public IP Address: ') + chalk.yellow(this.publicIp));
+        console.log(chalk.white('Local IP:  ') + chalk.yellow(this.localIp));
+        console.log(chalk.white('Public IP: ') + chalk.yellow(this.publicIp));
         console.log();
 
         // Check for VPN/Virtual adapters
@@ -112,8 +106,8 @@ class NetworkChecker {
             }).trim();
             
             if (allIPs.includes('26.') || allIPs.includes('25.') || allIPs.toLowerCase().includes('hamachi') || allIPs.toLowerCase().includes('vpn') || allIPs.toLowerCase().includes('zerotier')) {
-                console.log(chalk.yellow('  ⚠️  VPN or Virtual Network Adapter Detected!'));
-                console.log(chalk.gray('     Make sure to use your REAL local IP (192.168.x.x) for port forwarding\n'));
+                console.log(chalk.yellow('VPN/virtual adapter detected'));
+                console.log(chalk.gray('Use your real local IP (192.168.x.x) for port forwarding\n'));
             }
         } catch (e) {
             // Ignore errors in VPN detection
@@ -121,14 +115,14 @@ class NetworkChecker {
 
         // Check if behind router
         if (this.localIp.startsWith('192.168.') || this.localIp.startsWith('10.') || this.localIp.startsWith('172.')) {
-            console.log(chalk.yellow('  ℹ️  You are behind a router (NAT) - Port forwarding required!\n'));
+            console.log(chalk.yellow('Behind NAT: port forwarding required\n'));
         }
 
         // Check ports
-        console.log(chalk.cyan('🔌 Port Status Check:\n'));
+        console.log(chalk.cyan('Port status:\n'));
         
         const portOpen = this.checkLocalPort(this.port);
-        const portStatus = portOpen ? chalk.green('✓ OPEN') : chalk.red('✗ CLOSED');
+        const portStatus = portOpen ? chalk.green('OPEN') : chalk.red('CLOSED');
         console.log(`  Port ${this.port} (RTSP):  ${portStatus}`);
         
         if (!portOpen) {
@@ -137,10 +131,10 @@ class NetworkChecker {
         console.log();
 
         // Firewall check
-        console.log(chalk.cyan('🛡️  Windows Firewall Check:\n'));
+        console.log(chalk.cyan('Windows Firewall:\n'));
         
         const firewallRule = this.checkFirewall(this.port);
-        const firewallStatus = firewallRule ? chalk.green('✓ ALLOWED') : chalk.yellow('⚠️  NO RULE FOUND');
+        const firewallStatus = firewallRule ? chalk.green('ALLOWED') : chalk.yellow('NO RULE FOUND');
         console.log(`  Port ${this.port} Inbound: ${firewallStatus}`);
         
         if (!firewallRule) {
@@ -149,12 +143,9 @@ class NetworkChecker {
         console.log();
 
         // URLs
-        console.log(chalk.cyan('🔗 Your RTSP URLs:\n'));
-        console.log(chalk.white('  Local Network: '));
-        console.log(chalk.yellow(`    rtsp://${this.username}:${this.password}@${this.localIp}:${this.port}/rtsp/streaming`));
-        console.log();
-        console.log(chalk.white('  Internet (Public): '));
-        console.log(chalk.yellow(`    rtsp://${this.username}:${this.password}@${this.publicIp}:${this.port}/rtsp/streaming?channel=03&subtype=1`));
+        console.log(chalk.cyan('RTSP URLs:\n'));
+        console.log(chalk.white('  Local: ') + chalk.yellow(`rtsp://${this.username}:${this.password}@${this.localIp}:${this.port}/rtsp/streaming`));
+        console.log(chalk.white('  Public: ') + chalk.yellow(`rtsp://${this.username}:${this.password}@${this.publicIp}:${this.port}/rtsp/streaming?channel=03&subtype=1`));
         console.log();
 
         // Setup instructions
@@ -165,40 +156,10 @@ class NetworkChecker {
      * Display setup instructions
      */
     displaySetupInstructions() {
-        console.log(chalk.cyan('🔧 Setup Instructions for Internet Access:\n'));
-        console.log(chalk.white('  STEP 1: Configure Router Port Forwarding\n'));
-        console.log(chalk.gray('    1. Access your router admin panel (usually http://192.168.1.1)'));
-        console.log(chalk.gray('    2. Find "Port Forwarding" or "Virtual Server" section'));
-        console.log(chalk.gray('    3. Add a new port forwarding rule:'));
-        console.log(chalk.yellow(`       • External Port: ${this.port}`));
-        console.log(chalk.yellow(`       • Internal IP: ${this.localIp}`));
-        console.log(chalk.yellow(`       • Internal Port: ${this.port}`));
-        console.log(chalk.yellow(`       • Protocol: TCP`));
-        console.log(chalk.gray('    4. Save and apply the changes\n'));
-
-        console.log(chalk.white('  STEP 2: Configure Windows Firewall (If needed)\n'));
-        console.log(chalk.gray('    Run this PowerShell command as Administrator:\n'));
-        console.log(chalk.yellow(`    New-NetFirewallRule -DisplayName "RTSP Server Port ${this.port}" -Direction Inbound -Protocol TCP -LocalPort ${this.port} -Action Allow\n`));
-
-        console.log(chalk.white('  STEP 3: Test the Connection\n'));
-        console.log(chalk.gray('    1. On a device outside your network (use mobile data):'));
-        console.log(chalk.gray('    2. Open VLC Media Player'));
-        console.log(chalk.gray('    3. Go to Media → Open Network Stream'));
-        console.log(chalk.yellow(`    4. Enter: rtsp://${this.username}:${this.password}@${this.publicIp}:${this.port}/rtsp/streaming?channel=03&subtype=1`));
-        console.log(chalk.gray('    5. Click Play\n'));
-
-        console.log(chalk.cyan('📚 Additional Tips:\n'));
-        console.log(chalk.gray('  • If you have a dynamic IP, consider using a DDNS service'));
-        console.log(chalk.gray('  • Test locally first before testing over internet'));
-        console.log(chalk.gray('  • Make sure your ISP doesn\'t block port 89'));
-        console.log(chalk.gray('  • For better security, consider using a VPN or different port\n'));
-
-        console.log(chalk.cyan('🌐 Common Router Brands:\n'));
-        console.log(chalk.gray('  • Netgear: Advanced → Port Forwarding/Port Triggering'));
-        console.log(chalk.gray('  • TP-Link: Advanced → NAT Forwarding → Virtual Servers'));
-        console.log(chalk.gray('  • Linksys: Connectivity → Port Range Forwarding'));
-        console.log(chalk.gray('  • ASUS: WAN → Virtual Server/Port Forwarding'));
-        console.log(chalk.gray('  • D-Link: Advanced → Port Forwarding\n'));
+        console.log(chalk.cyan('Setup (internet access):\n'));
+        console.log(chalk.white('  Router: ') + chalk.gray('Forward TCP port ') + chalk.yellow(`${this.port}`) + chalk.gray(' → ') + chalk.yellow(`${this.localIp}`));
+        console.log(chalk.white('  Firewall: ') + chalk.gray('Allow inbound TCP port ') + chalk.yellow(`${this.port}`));
+        console.log(chalk.gray('\nTest from outside your network (mobile data) using the Public URL\n'));
     }
 
     /**
@@ -206,15 +167,15 @@ class NetworkChecker {
      */
     createFirewallRule() {
         try {
-            console.log(chalk.cyan('\n🛡️  Creating Windows Firewall rule...\n'));
+            console.log(chalk.cyan('\nCreating Windows Firewall rule...\n'));
             
             execSync(`powershell -Command "Start-Process powershell -Verb RunAs -ArgumentList '-Command New-NetFirewallRule -DisplayName \\\"RTSP Server Port ${this.port}\\\" -Direction Inbound -Protocol TCP -LocalPort ${this.port} -Action Allow'"`, {
                 stdio: 'inherit'
             });
             
-            console.log(chalk.green('\n✓ Firewall rule created successfully!\n'));
+            console.log(chalk.green('\nFirewall rule created\n'));
         } catch (error) {
-            console.log(chalk.red('\n✗ Failed to create firewall rule'));
+            console.log(chalk.red('\nFailed to create firewall rule'));
             console.log(chalk.yellow('Please run this command manually as Administrator:\n'));
             console.log(chalk.white(`New-NetFirewallRule -DisplayName "RTSP Server Port ${this.port}" -Direction Inbound -Protocol TCP -LocalPort ${this.port} -Action Allow\n`));
         }

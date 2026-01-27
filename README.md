@@ -184,14 +184,14 @@ To access your stream from anywhere over the internet, you need to:
 
 2. **Configure Router Port Forwarding**
    - Forward port 89 (TCP) to your computer's local IP
-   - See [SETUP_GUIDE.md](SETUP_GUIDE.md) for detailed instructions
+   - See the "Internet Access Setup" section below for detailed instructions
 
 3. **Verify Configuration**
    ```bash
    npm run check-network
    ```
 
-📖 **For complete setup instructions, see [SETUP_GUIDE.md](SETUP_GUIDE.md)**
+📖 See the "Internet Access Setup" section below for complete setup instructions
 
 ## Configuration
 
@@ -243,8 +243,7 @@ localwebcamstream/
 ├── stream-manager.js     # FFmpeg streaming bridge
 ├── network-checker.js    # Network diagnostics tool
 ├── package.json          # Node.js dependencies
-├── SETUP_GUIDE.md       # Complete internet setup guide
-├── README.md            # This file
+├── README.md            # Single consolidated documentation
 └── mediamtx/            # RTSP server directory
     ├── mediamtx.exe     # MediaMTX executable
     └── mediamtx.yml     # Server configuration
@@ -324,8 +323,8 @@ localwebcamstream/
 - Check Windows Firewall: `npm run add-firewall-rule`
 - Test with online port checker (port 89)
 - Verify your public IP hasn't changed
-- Check if ISP blocks port 89 (try different port like 89)
-- See [SETUP_GUIDE.md](SETUP_GUIDE.md) for complete instructions
+- Check if ISP blocks the chosen port; try a different one
+- See the "Internet Access Setup" section for complete instructions
 
 ### Stream Won't Start
 
@@ -416,7 +415,7 @@ To stream multiple cameras:
 1. **Change Default Credentials** - Update username/password in `mediamtx.yml`
 2. **Use Strong Passwords** - The current password is visible in URLs
 3. **Consider VPN** - For sensitive applications, use VPN instead of exposing port
-4. **Non-Standard Port** - Using port 89 instead of 89 may avoid some attacks
+4. **Non-Standard Port** - Use a non-standard port to reduce casual scans
 5. **Monitor Access** - Check MediaMTX logs for unauthorized access attempts
 
 ## License
@@ -428,7 +427,6 @@ MIT License - Feel free to use and modify as needed.
 For issues or questions:
 1. Run diagnostics: `npm run check-network`
 2. Check the Troubleshooting section above
-3. Review [SETUP_GUIDE.md](SETUP_GUIDE.md) for detailed setup help
 2. Ensure all prerequisites are installed
 3. Verify camera and FFmpeg are working independently
 4. Check console output for specific error messages
@@ -436,3 +434,16 @@ For issues or questions:
 ---
 
 **Happy Streaming! 🎥📡**
+
+## Environment Variables
+
+Configure the application using these variables in a .env file:
+
+- RTSP_PORT (default 89)
+- RTP_PORT (default 8002)
+- RTCP_PORT (default 8003)
+- WEBRTC_PORT (default 8889)
+- RTSP_USERNAME (default user1)
+- RTSP_PASSWORD (default BBE500bbe)
+- PUBLIC_IP (optional, used for generating public URL)
+- FFMPEG_PATH (optional, path to ffmpeg executable)

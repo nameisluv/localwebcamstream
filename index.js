@@ -3,27 +3,14 @@ const CameraSelector = require('./camera-selector');
 const RTSPServer = require('./rtsp-server');
 const StreamManager = require('./stream-manager');
 const chalk = require('chalk');
-
-try { require('dotenv').config(); } catch (_) {}
+const config = require('./config');
 
 /**
- * USB Camera RTSP Streaming System
- * Main application entry point
+ * USB Camera RTSP Streaming System - Main entry
  */
-
-// ASCII Art Banner
-const banner = `
-╔═══════════════════════════════════════════════════════╗
-║   USB Camera RTSP Streaming System                    ║
-║   Stream your USB camera via RTSP                     ║
-╚═══════════════════════════════════════════════════════╝
-`;
 
 async function main() {
     try {
-        // Display banner
-        console.log(chalk.cyan(banner));
-
         // Initialize modules
         const detector = new CameraDetector();
         const selector = new CameraSelector();
@@ -35,7 +22,7 @@ async function main() {
 
         // Step 2: Select camera
         const selectedCamera = await selector.selectCamera(cameras);
-        console.log(chalk.green(`\n✓ Selected: ${selectedCamera.name}\n`));
+        console.log(chalk.green(`\nSelected: ${selectedCamera.name}\n`));
 
         // Step 3: Start RTSP server
         await server.start();
@@ -52,51 +39,42 @@ async function main() {
         });
 
         // Display connection information
-        console.log(chalk.green('\n' + '='.repeat(70)));
-        console.log(chalk.green.bold('  🎥 CAMERA STREAM IS LIVE! 🎥'));
-        console.log(chalk.green('='.repeat(70)));
+        console.log(chalk.green('\nCamera stream is live'));
         
         const localUrl = server.getViewUrl();
         const publicUrl = server.getPublicUrl();
         
-        console.log(chalk.cyan('\n📺 LOCAL NETWORK ACCESS (Same network as this computer):\n'));
-        console.log(chalk.white('  Local URL: ') + chalk.yellow(localUrl));
+        console.log(chalk.cyan('\nLocal Access:'));
+        console.log(chalk.white('  URL: ') + chalk.yellow(localUrl));
         
-        console.log(chalk.cyan('\n🌍 INTERNET ACCESS (From anywhere in the world):\n'));
-        console.log(chalk.white('  Public URL: ') + chalk.yellow(publicUrl));
-        console.log(chalk.gray('  ⚠️  Requires router port forwarding (see setup guide below)'));
+        console.log(chalk.cyan('\nInternet Access:'));
+        console.log(chalk.white('  URL: ') + chalk.yellow(publicUrl));
+        console.log(chalk.gray('  Requires router port forwarding'));
 
-        console.log(chalk.cyan('\n📖 VLC Player Instructions:'));
-        console.log(chalk.gray('  1. Open VLC Media Player'));
-        console.log(chalk.gray('  2. Go to Media → Open Network Stream'));
-        console.log(chalk.gray('  3. Enter one of the URLs above'));
-        console.log(chalk.gray('  4. Click Play\n'));
+        console.log(chalk.cyan('\nViewer tip:'));
+        console.log(chalk.gray('  Use VLC → Open Network Stream and paste URL\n'));
 
-        console.log(chalk.cyan('⚡ Stream Specifications:'));
-        console.log(chalk.gray('  ✓ H.264 Baseline Profile (Maximum compatibility)'));
-        console.log(chalk.gray('  ✓ 1280x720 @ 30fps'));
-        console.log(chalk.gray('  ✓ TCP transport for reliability'));
-        console.log(chalk.gray('  ✓ Low-latency tuning\n'));
+        console.log(chalk.cyan('Stream specs:'));
+        console.log(chalk.gray('  Capture 1920x1080 → Stream 1280x720 @ 30fps (H.264, TCP)\n'));
 
-        console.log(chalk.cyan('🔧 ROUTER SETUP REQUIRED FOR INTERNET ACCESS:'));
-        console.log(chalk.yellow('  To access from the internet, configure your router:\n'));
-        console.log(chalk.white('  1. Port Forward: ') + chalk.cyan(`Port ${process.env.RTSP_PORT || 89} (TCP) → This computer`));
-        console.log(chalk.white('  2. Optional: ') + chalk.gray(`Port ${process.env.RTP_PORT || 8002} (UDP) for RTP`));
-        console.log(chalk.white('  3. Optional: ') + chalk.gray(`Port ${process.env.RTCP_PORT || 8003} (UDP) for RTCP`));
-        console.log(chalk.gray('\n  💡 Run "npm run check-network" for detailed setup help\n'));
+        console.log(chalk.cyan('Router setup:'));
+        console.log(chalk.yellow('  Configure port forwarding:'));
+        console.log(chalk.white('  1. Port Forward: ') + chalk.cyan(`Port ${config.RTSP_PORT} (TCP) → This computer`));
+        console.log(chalk.white('  2. Optional: ') + chalk.gray(`Port ${config.RTP_PORT} (UDP) for RTP`));
+        console.log(chalk.white('  3. Optional: ') + chalk.gray(`Port ${config.RTCP_PORT} (UDP) for RTCP`));
+        console.log(chalk.gray('\n  Run "npm run check-network" for detailed setup help\n'));
 
-        console.log(chalk.cyan('🌐 WebRTC Direct Access (Optional):'));
-        console.log(chalk.gray('  If you want to view directly via WebRTC:'));
-        console.log(chalk.white('  URL: ') + chalk.yellow(`http://localhost:${process.env.WEBRTC_PORT || 8889}/rtsp/streaming`));
+        console.log(chalk.cyan('WebRTC (local):'));
+        console.log(chalk.white('  URL: ') + chalk.yellow(`http://localhost:${config.WEBRTC_PORT}/rtsp/streaming`));
 
-        console.log(chalk.yellow('\nPress Ctrl+C to stop streaming\n'));
+        console.log(chalk.yellow('\nPress Ctrl+C to stop\n'));
 
         // Handle graceful shutdown
         const cleanup = () => {
-            console.log(chalk.yellow('\n\n🛑 Shutting down...'));
+            console.log(chalk.yellow('\n\nShutting down...'));
             streamManager.stopStreaming();
             server.stop();
-            console.log(chalk.green('✓ Cleanup complete. Goodbye!\n'));
+            console.log(chalk.green('Cleanup complete\n'));
             process.exit(0);
         };
 
@@ -104,7 +82,7 @@ async function main() {
         process.on('SIGTERM', cleanup);
 
     } catch (error) {
-        console.error(chalk.red('\n✗ Application error:'), error.message);
+        console.error(chalk.red('\nApplication error:'), error.message);
         console.error(error);
         process.exit(1);
     }

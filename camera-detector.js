@@ -1,8 +1,7 @@
 const { execSync } = require('child_process');
 const chalk = require('chalk');
 const fs = require('fs');
-
-try { require('dotenv').config(); } catch (_) {}
+const config = require('./config');
 
 /**
  * Camera Detector Module
@@ -20,7 +19,7 @@ class CameraDetector {
    */
   checkFFmpegInstalled() {
     try {
-      const ffmpeg = process.env.FFMPEG_PATH ? `"${process.env.FFMPEG_PATH}"` : 'ffmpeg';
+      const ffmpeg = config.FFMPEG_PATH ? `"${config.FFMPEG_PATH}"` : 'ffmpeg';
       execSync(`${ffmpeg} -version`, { stdio: 'ignore' });
       return true;
     } catch (error) {
@@ -49,7 +48,7 @@ class CameraDetector {
     try {
       // List DirectShow video devices on Windows
       // Use 2>&1 to redirect stderr to stdout since FFmpeg outputs to stderr
-      const ffmpeg = process.env.FFMPEG_PATH ? `"${process.env.FFMPEG_PATH}"` : 'ffmpeg';
+      const ffmpeg = config.FFMPEG_PATH ? `"${config.FFMPEG_PATH}"` : 'ffmpeg';
       output = execSync(`${ffmpeg} -list_devices true -f dshow -i dummy 2>&1`, {
         encoding: 'utf8'
       });
